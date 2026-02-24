@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Exam from '@/models/Exam';
+import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
+        const authUser = await getAuthUser(request);
+        console.log(authUser);
+        if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
+
+        console.log('[GET /api/exams] Verified:', authUser.email, '| Role:', authUser.role);
 
         await connectDB();
 
@@ -19,8 +21,7 @@ export async function GET(request: NextRequest) {
 
         let query: any = {};
 
-        // Students can only see published exams
-        if ((session.user as any).role === 'student') {
+        if (authUser.role === 'student') {
             query.isPublished = true;
         }
 
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
         const exams = await Exam.find(query)
             .sort({ createdAt: -1 })
             .populate('createdBy', 'name email')
-            .select('-questions'); // Don't send questions in list view
+            .select('-questions');
 
         return NextResponse.json({ success: true, data: exams });
     } catch (error: any) {
@@ -44,26 +45,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || (session.user as any).role !== 'admin') {
+        const authUser = await getAuthUser(request);
+        console.log(authUser);
+        if (!authUser || authUser.role !== 'admin') {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await request.json();
-        const {
-            title,
-            description,
-            duration,
-            totalMarks,
-            passingMarks,
-            questions,
-            category,
-            difficulty,
-            instructions,
-            isPublished,
-        } = body;
+        const { title, description, duration, totalMarks, passingMarks, questions, category, difficulty, instructions, isPublished } = body;
 
-        // Validation
         if (!title || !description || !duration || !totalMarks || !passingMarks || !category || !difficulty) {
             return NextResponse.json(
                 { success: false, message: 'Please provide all required fields' },
@@ -74,17 +64,11 @@ export async function POST(request: NextRequest) {
         await connectDB();
 
         const newExam = await Exam.create({
-            title,
-            description,
-            duration,
-            totalMarks,
-            passingMarks,
+            title, description, duration, totalMarks, passingMarks,
             questions: questions || [],
-            category,
-            difficulty,
-            instructions,
+            category, difficulty, instructions,
             isPublished: isPublished || false,
-            createdBy: (session.user as any).id,
+            createdBy: authUser.id,
         });
 
         return NextResponse.json(

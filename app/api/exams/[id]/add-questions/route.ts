@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthUser } from "@/lib/getAuthUser";
 import connectDB from "@/lib/mongodb";
 import Exam from "@/models/Exam";
 import Question from "@/models/Question";
@@ -13,12 +12,17 @@ export async function POST(
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const authUser = await getAuthUser(request);
+    if (!authUser || authUser.role !== "admin") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    // 🔥 Await params (Next 16 requirement)
+    // Await params (Next.js 15 requirement)
     const { id } = await context.params;
 
-    console.log("Received examId:", id);
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -28,7 +32,6 @@ export async function POST(
     }
 
     const exam = await Exam.findById(id);
-
     if (!exam) {
       return NextResponse.json(
         { success: false, message: "Exam not found" },
@@ -54,7 +57,7 @@ export async function POST(
         explanation: q.explanation,
         category: q.category || exam.category,
         difficulty: q.difficulty || exam.difficulty,
-        createdBy: (session?.user as any)?.id,
+        createdBy: authUser.id,
       }))
     );
 
@@ -68,7 +71,6 @@ export async function POST(
       message: "Questions added successfully",
       totalAdded: createdIds.length,
     });
-
   } catch (error: any) {
     console.error("Error adding questions:", error);
     return NextResponse.json(

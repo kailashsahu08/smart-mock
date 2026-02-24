@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import Header from '@/components/layout/Header';
@@ -152,14 +152,14 @@ function Counter({ target }: { target: string }) {
 
 /* ─── Page ──────────────────────────────────────────── */
 export default function Home() {
-  const { status } = useSession();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [slide, setSlide] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
-  useEffect(() => {
-    if (status === 'authenticated') router.push('/dashboard');
-  }, [status, router]);
+  // useEffect(() => {
+  //   if (isAuthenticated) router.push('/dashboard');
+  // }, [isAuthenticated, router]);
 
   useEffect(() => {
     const t = setInterval(() => setSlide((p) => (p + 1) % heroSlides.length), 5500);
@@ -171,7 +171,7 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0e23' }}>
         <div className="spinner" />

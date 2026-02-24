@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import TestAttempt from '@/models/TestAttempt';
 import Question from '@/models/Question';
+import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
@@ -24,8 +23,7 @@ export async function GET(
             return NextResponse.json({ success: false, message: 'Attempt not found' }, { status: 404 });
         }
 
-        // Check if user owns this attempt
-        if (attempt.user._id.toString() !== (session.user as any).id) {
+        if (attempt.user._id.toString() !== authUser.id) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
         }
 
@@ -43,8 +41,8 @@ export async function PUT(
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
@@ -58,11 +56,10 @@ export async function PUT(
             return NextResponse.json({ success: false, message: 'Attempt not found' }, { status: 404 });
         }
 
-        if (attempt.user.toString() !== (session.user as any).id) {
+        if (attempt.user.toString() !== authUser.id) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
         }
 
-        // Update answers
         attempt.answers = answers;
         attempt.timeTaken = timeTaken || attempt.timeTaken;
         await attempt.save();
@@ -81,8 +78,10 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
+        const authUser = await getAuthUser(request);
+
+
+        if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
@@ -96,38 +95,23 @@ export async function POST(
             return NextResponse.json({ success: false, message: 'Attempt not found' }, { status: 404 });
         }
 
-        if (attempt.user.toString() !== (session.user as any).id) {
+        if (attempt.user.toString() !== authUser.id) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
         }
 
-        // Get all questions to check answers
         const questionIds = answers.map((a: any) => a.questionId);
         const questions = await Question.find({ _id: { $in: questionIds } });
 
-        // Calculate score
-        let correctAnswers = 0;
-        let wrongAnswers = 0;
-        let skippedQuestions = 0;
+        let correctAnswers = 0, wrongAnswers = 0, skippedQuestions = 0;
 
         const updatedAnswers = answers.map((answer: any) => {
             const question = questions.find((q) => q._id.toString() === answer.questionId.toString());
-
             if (!question) return answer;
-
             const isCorrect = question.correctAnswer === answer.selectedOption;
-
-            if (answer.selectedOption === -1) {
-                skippedQuestions++;
-            } else if (isCorrect) {
-                correctAnswers++;
-            } else {
-                wrongAnswers++;
-            }
-
-            return {
-                ...answer,
-                isCorrect,
-            };
+            if (answer.selectedOption === -1) skippedQuestions++;
+            else if (isCorrect) correctAnswers++;
+            else wrongAnswers++;
+            return { ...answer, isCorrect };
         });
 
         const totalQuestions = answers.length;
@@ -135,7 +119,6 @@ export async function POST(
         const score = correctAnswers * marksPerQuestion;
         const percentage = (correctAnswers / totalQuestions) * 100;
 
-        // Update attempt
         attempt.answers = updatedAnswers;
         attempt.score = score;
         attempt.correctAnswers = correctAnswers;
@@ -151,14 +134,7 @@ export async function POST(
         return NextResponse.json({
             success: true,
             message: 'Exam submitted successfully',
-            data: {
-                attemptId: attempt._id,
-                score,
-                percentage,
-                correctAnswers,
-                wrongAnswers,
-                skippedQuestions,
-            },
+            data: { attemptId: attempt._id, score, percentage, correctAnswers, wrongAnswers, skippedQuestions },
         });
     } catch (error: any) {
         console.error('Error submitting exam:', error);

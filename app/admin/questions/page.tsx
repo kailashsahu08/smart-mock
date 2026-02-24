@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/context/AuthContext';
+import { useFetchUsingAuth } from '@/hooks/fetchUsingAuth';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -12,7 +13,8 @@ import Navbar from '@/components/layout/Navbar';
 
 export default function AdminQuestionsPage() {
     const router = useRouter();
-    const { data: session, status } = useSession();
+    const { isAuthenticated, isLoading: authLoading, hasRole } = useAuth();
+    const { get, post, delete: del } = useFetchUsingAuth();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -27,18 +29,18 @@ export default function AdminQuestionsPage() {
     });
 
     useEffect(() => {
-        if (status === 'authenticated') {
-            if ((session?.user as any)?.role !== 'admin') {
+        if (!authLoading) {
+            if (!isAuthenticated || !hasRole('admin')) {
                 router.push('/dashboard');
             } else {
                 fetchQuestions();
             }
         }
-    }, [status, session, router]);
+    }, [isAuthenticated, authLoading, hasRole, router]);
 
     const fetchQuestions = async () => {
         try {
-            const res = await fetch('/api/questions');
+            const res = await get('/api/questions');
             const data = await res.json();
             if (data.success) {
                 setQuestions(data.data);
@@ -54,13 +56,9 @@ export default function AdminQuestionsPage() {
         e.preventDefault();
 
         try {
-            const res = await fetch('/api/questions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    tags: formData.tags.split(',').map((t) => t.trim()).filter((t) => t),
-                }),
+            const res = await post('/api/questions', {
+                ...formData,
+                tags: formData.tags.split(',').map((t) => t.trim()).filter((t) => t),
             });
 
             const data = await res.json();
@@ -89,7 +87,7 @@ export default function AdminQuestionsPage() {
         if (!confirm('Are you sure you want to delete this question?')) return;
 
         try {
-            const res = await fetch(`/api/questions/${id}`, { method: 'DELETE' });
+            const res = await del(`/api/questions/${id}`);
             const data = await res.json();
             if (data.success) {
                 fetchQuestions();

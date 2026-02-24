@@ -1,6 +1,7 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/context/AuthContext';
+import { useFetchUsingAuth } from '@/hooks/fetchUsingAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Card from '@/components/ui/Card';
@@ -10,7 +11,8 @@ import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 
 export default function DashboardPage() {
-    const { data: session, status } = useSession();
+    const { user, isAuthenticated, isLoading: authLoading, hasRole } = useAuth();
+    const { get } = useFetchUsingAuth();
     const router = useRouter();
     const [stats, setStats] = useState({
         totalAttempts: 0,
@@ -21,17 +23,25 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/login');
-        } else if (status === 'authenticated') {
+        if (authLoading) return;
+
+        if (!isAuthenticated) {
+            // Double-check localStorage before redirecting (guards against render-cycle race)
+            const storedToken = localStorage.getItem('sm_auth_token');
+            const storedUser = localStorage.getItem('sm_auth_user');
+            if (!storedToken || !storedUser) {
+                router.push('/login');
+            }
+            // If token IS in localStorage, AuthContext will hydrate on next render — just wait
+        } else {
             fetchDashboardData();
         }
-    }, [status, router]);
+    }, [isAuthenticated, authLoading, router]);
 
     const fetchDashboardData = async () => {
         try {
             // Fetch results
-            const resultsRes = await fetch('/api/results');
+            const resultsRes = await get('/api/results');
             const resultsData = await resultsRes.json();
 
             if (resultsData.success) {
@@ -47,7 +57,7 @@ export default function DashboardPage() {
             }
 
             // Fetch available exams count
-            const examsRes = await fetch('/api/exams');
+            const examsRes = await get('/api/exams');
             const examsData = await examsRes.json();
             if (examsData.success) {
                 setStats((prev) => ({ ...prev, totalExams: examsData.data.length }));
@@ -59,7 +69,7 @@ export default function DashboardPage() {
         }
     };
 
-    if (status === 'loading' || loading) {
+    if (authLoading || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="spinner"></div>
@@ -67,7 +77,7 @@ export default function DashboardPage() {
         );
     }
 
-    const isAdmin = (session?.user as any)?.role === 'admin';
+    const isAdmin = hasRole('admin');
 
     return (
         <div className="min-h-screen bg-surface">
@@ -75,7 +85,7 @@ export default function DashboardPage() {
                 {/* Welcome Section */}
                 <div className="mb-8 animate-fadeIn">
                     <h1 className="text-4xl font-bold mb-2">
-                        Welcome back, <span className="gradient-text">{session?.user?.name}</span>!
+                        Welcome back, <span className="gradient-text">{user?.name}</span>!
                     </h1>
                     <p className="text-text-secondary">
                         {isAdmin ? 'Manage your exams and questions' : 'Continue your learning journey'}

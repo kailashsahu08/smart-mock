@@ -1,18 +1,19 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Home, BookOpen, FileText, BarChart3, Settings, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 
 export default function Navbar() {
-    const { data: session } = useSession();
+    const { user, logout, hasRole } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const isAdmin = (session?.user as any)?.role === 'admin';
+    const isAdmin = hasRole('admin');
 
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -25,6 +26,11 @@ export default function Navbar() {
             ]
             : []),
     ];
+
+    const handleLogout = () => {
+        logout();
+        router.push('/');
+    };
 
     return (
         <nav className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-lg bg-opacity-90">
@@ -48,8 +54,8 @@ export default function Navbar() {
                                     key={item.href}
                                     href={item.href}
                                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${isActive
-                                            ? 'bg-primary text-white'
-                                            : 'text-text-secondary hover:bg-surface hover:text-foreground'
+                                        ? 'bg-primary text-white'
+                                        : 'text-text-secondary hover:bg-surface hover:text-foreground'
                                         }`}
                                 >
                                     <Icon size={20} />
@@ -62,13 +68,13 @@ export default function Navbar() {
                     {/* User Menu */}
                     <div className="hidden md:flex items-center space-x-4">
                         <div className="text-right">
-                            <p className="text-sm font-medium text-foreground">{session?.user?.name}</p>
-                            <p className="text-xs text-text-secondary capitalize">{(session?.user as any)?.role}</p>
+                            <p className="text-sm font-medium text-foreground">{user?.name}</p>
+                            <p className="text-xs text-text-secondary capitalize">{user?.role}</p>
                         </div>
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => signOut({ callbackUrl: '/' })}
+                            onClick={handleLogout}
                             className="flex items-center space-x-2"
                         >
                             <LogOut size={18} />
@@ -97,8 +103,8 @@ export default function Navbar() {
                                     href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
                                     className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all ${isActive
-                                            ? 'bg-primary text-white'
-                                            : 'text-text-secondary hover:bg-surface hover:text-foreground'
+                                        ? 'bg-primary text-white'
+                                        : 'text-text-secondary hover:bg-surface hover:text-foreground'
                                         }`}
                                 >
                                     <Icon size={20} />
@@ -108,13 +114,13 @@ export default function Navbar() {
                         })}
                         <div className="border-t border-border pt-4 mt-4">
                             <div className="px-4 mb-3">
-                                <p className="text-sm font-medium text-foreground">{session?.user?.name}</p>
-                                <p className="text-xs text-text-secondary">{session?.user?.email}</p>
+                                <p className="text-sm font-medium text-foreground">{user?.name}</p>
+                                <p className="text-xs text-text-secondary">{user?.email}</p>
                             </div>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => signOut({ callbackUrl: '/' })}
+                                onClick={handleLogout}
                                 className="w-full flex items-center justify-center space-x-2"
                             >
                                 <LogOut size={18} />

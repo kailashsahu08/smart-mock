@@ -7,12 +7,14 @@ import Button from "@/components/ui/Button";
 import { Clock, BookOpen, Award, Filter, Plus } from "lucide-react";
 import { getDifficultyColor } from "@/lib/utils";
 import Navbar from "@/components/layout/Navbar";
+import { useFetchUsingAuth } from "@/hooks/fetchUsingAuth";
 
 export default function ExamsPage() {
   const router = useRouter();
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ category: "", difficulty: "" });
+  const { get } = useFetchUsingAuth();
 
   useEffect(() => {
     fetchExams();
@@ -20,7 +22,7 @@ export default function ExamsPage() {
 
   const fetchExams = async () => {
     try {
-      const res = await fetch("/api/exams");
+      const res = await get("/api/exams");
       const data = await res.json();
       if (data.success) setExams(data.data);
     } catch (error) {

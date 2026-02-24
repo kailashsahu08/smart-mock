@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/app/context/AuthContext";
+import { useFetchUsingAuth } from "@/hooks/fetchUsingAuth";
 import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
 export default function CreateQuestionPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { isAuthenticated, isLoading: authLoading, hasRole } = useAuth();
+  const { post } = useFetchUsingAuth();
 
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +25,15 @@ export default function CreateQuestionPage() {
     tags: "",
   });
 
-  if (!session || (session.user as any)?.role !== "admin") {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !hasRole('admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <h1 className="text-xl font-semibold">Unauthorized Access</h1>
@@ -42,13 +52,9 @@ export default function CreateQuestionPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/questions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          tags: form.tags.split(",").map((t) => t.trim()),
-        }),
+      const res = await post("/api/questions", {
+        ...form,
+        tags: form.tags.split(",").map((t) => t.trim()),
       });
 
       const data = await res.json();
@@ -79,7 +85,7 @@ export default function CreateQuestionPage() {
 
         <Card variant="glass" className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             {/* Question */}
             <div>
               <label className="label">Question</label>

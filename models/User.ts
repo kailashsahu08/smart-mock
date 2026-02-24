@@ -8,6 +8,8 @@ export interface IUser extends Document {
   avatar?: string;
   bio?: string;
   age?: number;
+  token?: string;
+  tokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +48,12 @@ const userSchema = new Schema<IUser>(
     },
     age: {
       type: Number,
+    },
+    token: {
+      type: String,
+    },
+    tokenExpiry: {
+      type: Date,
     },
   },
   { timestamps: true }

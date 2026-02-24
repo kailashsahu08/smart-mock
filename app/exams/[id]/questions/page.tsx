@@ -5,12 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import { useFetchUsingAuth } from "@/hooks/fetchUsingAuth";
 
 export default function ExamQuestionBuilder() {
-  const { id : examId } = useParams();
+  const { id: examId } = useParams();
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const { post } = useFetchUsingAuth();
 
   const [questions, setQuestions] = useState([
     {
@@ -63,17 +65,11 @@ export default function ExamQuestionBuilder() {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/exams/${examId}/add-questions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questions }),
-      });
+      const res = await post(`/api/exams/${examId}/add-questions`, { questions });
 
       const data = await res.json();
 
       if (!data.success) {
-        console.log(data, examId);
-        
         alert(data.message);
         return;
       }

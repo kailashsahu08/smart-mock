@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthUser } from '@/lib/getAuthUser';
 import connectDB from '@/lib/mongodb';
 import Exam from '@/models/Exam';
 import TestAttempt from '@/models/TestAttempt';
@@ -10,8 +9,8 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
+        const authUser = getAuthUser(request);
+        if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
@@ -26,9 +25,8 @@ export async function POST(
             return NextResponse.json({ success: false, message: 'Exam not available' }, { status: 403 });
         }
 
-        // Create test attempt
         const attempt = await TestAttempt.create({
-            user: (session.user as any).id,
+            user: authUser.id,
             exam: exam._id,
             totalQuestions: exam.questions.length,
             answers: exam.questions.map((q: any) => ({

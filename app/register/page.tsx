@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/app/context/AuthContext';
 
 /* ── Shared input style ── */
 const inputStyle: React.CSSProperties = {
@@ -25,6 +26,7 @@ const stats = [
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -63,7 +65,9 @@ export default function RegisterPage() {
             if (!data.success) {
                 setError(data.message || 'Registration failed');
             } else {
-                router.push('/login?registered=true');
+                // Use token + user returned directly from register (same as login response)
+                login(data.token, data.user);
+                router.push('/dashboard');
             }
         } catch {
             setError('An error occurred. Please try again.');

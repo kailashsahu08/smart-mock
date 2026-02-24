@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import TestAttempt from '@/models/TestAttempt';
+import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
         await connectDB();
 
         const attempts = await TestAttempt.find({
-            user: (session.user as any).id,
+            user: authUser.id,
             status: 'completed',
         })
             .populate('exam', 'title category difficulty')

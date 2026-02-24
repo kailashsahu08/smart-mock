@@ -1,10 +1,12 @@
-export { default } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+// Auth is handled client-side via AuthContext (localStorage JWT).
+// This middleware is a passthrough — no server-side route protection needed.
+export function middleware(request: NextRequest) {
+    return NextResponse.next();
+}
 
 export const config = {
-    matcher: [
-        '/dashboard/:path*',
-        '/admin/:path*',
-        '/exams/:path*/test',
-        '/results/:path*',
-    ],
+    matcher: [], // No routes intercepted
 };

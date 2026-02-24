@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/context/AuthContext';
+import { useFetchUsingAuth } from '@/hooks/fetchUsingAuth';
 import Navbar from '@/components/layout/Navbar';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
 export default function CreateExamPage() {
     const router = useRouter();
-    const { data: session } = useSession();
+    const { isAuthenticated, hasRole } = useAuth();
+    const { post } = useFetchUsingAuth();
 
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({
@@ -25,7 +27,7 @@ export default function CreateExamPage() {
     });
 
     // Frontend protection
-    if (!session || (session.user as any)?.role !== 'admin') {
+    if (!isAuthenticated || !hasRole('admin')) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-surface">
                 <h1 className="text-xl font-semibold">Unauthorized Access</h1>
@@ -47,17 +49,11 @@ export default function CreateExamPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/exams', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...form,
-                    duration: Number(form.duration),
-                    totalMarks: Number(form.totalMarks),
-                    passingMarks: Number(form.passingMarks),
-                }),
+            const res = await post('/api/exams', {
+                ...form,
+                duration: Number(form.duration),
+                totalMarks: Number(form.totalMarks),
+                passingMarks: Number(form.passingMarks),
             });
 
             const data = await res.json();
@@ -88,7 +84,7 @@ export default function CreateExamPage() {
 
                 <Card variant="glass" className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        
+
                         {/* Title */}
                         <div>
                             <label className="label">Title</label>

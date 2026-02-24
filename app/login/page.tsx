@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -39,6 +39,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -50,16 +51,19 @@ export default function LoginPage() {
         setError('');
         setIsLoading(true);
         try {
-            const result = await signIn('credentials', {
-                email: formData.email,
-                password: formData.password,
-                redirect: false,
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email, password: formData.password }),
             });
-            if (result?.error) {
-                setError(result.error);
+            const data = await res.json();
+            console.log("login response", data);
+
+            if (!data.success) {
+                setError(data.message || 'Invalid credentials');
             } else {
+                login(data.token, data.user);
                 router.push('/dashboard');
-                router.refresh();
             }
         } catch {
             setError('An error occurred. Please try again.');

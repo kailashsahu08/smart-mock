@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { getServerSession } from "next-auth";
-import SessionProvider from "@/components/providers/SessionProvider";
+import { AuthProvider } from "@/app/context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,27 +15,23 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SmartMock - Modern Mock Test Platform",
-  description: "Take your learning to the next level with SmartMock - a comprehensive mock test platform with real-time analytics and performance tracking.",
+  description:
+    "Take your learning to the next level with SmartMock - a comprehensive mock test platform with real-time analytics and performance tracking.",
   keywords: ["mock test", "online exam", "quiz", "learning", "education"],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  const session = await getServerSession();
-
+}) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        <SessionProvider session={session}>
-          {children}
-        </SessionProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
 }
-
