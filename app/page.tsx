@@ -36,6 +36,8 @@ const examCategories = [
   { icon: '🩺', title: 'Medical Entrance', desc: 'NEET UG, NEET PG, AIIMS — chapter-wise and full-length mock tests.' },
   { icon: '💻', title: 'IT & Technology', desc: 'GATE CS, TCS, Infosys aptitude & coding assessment mock tests.' },
   { icon: '📋', title: 'SSC & Railways', desc: 'SSC CGL, CHSL, MTS, RRB NTPC — practice with real exam patterns.' },
+  { icon: '📋', title: 'SSC & Railways', desc: 'SSC CGL, CHSL, MTS, RRB NTPC — practice with real exam patterns.' },
+  { icon: '📋', title: 'SSC & Railways', desc: 'SSC CGL, CHSL, MTS, RRB NTPC — practice with real exam patterns.' },
 ];
 
 const instructors = [

@@ -6,17 +6,18 @@ import TestAttempt from '@/models/TestAttempt';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const authUser = getAuthUser(request);
+        const authUser = await getAuthUser(request);
         if (!authUser) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
         await connectDB();
 
-        const exam = await Exam.findById(params.id).populate('questions');
+        const exam = await Exam.findById(id).populate('questions');
         if (!exam) {
             return NextResponse.json({ success: false, message: 'Exam not found' }, { status: 404 });
         }

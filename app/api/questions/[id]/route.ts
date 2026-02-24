@@ -5,8 +5,9 @@ import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser) {
@@ -14,7 +15,7 @@ export async function GET(
         }
 
         await connectDB();
-        const question = await Question.findById(params.id).populate('createdBy', 'name email');
+        const question = await Question.findById(id).populate('createdBy', 'name email');
 
         if (!question) {
             return NextResponse.json({ success: false, message: 'Question not found' }, { status: 404 });
@@ -28,8 +29,9 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser || authUser.role !== 'admin') {
@@ -39,7 +41,7 @@ export async function PUT(
         const body = await request.json();
         await connectDB();
 
-        const question = await Question.findByIdAndUpdate(params.id, body, { new: true });
+        const question = await Question.findByIdAndUpdate(id, body, { new: true });
         if (!question) {
             return NextResponse.json({ success: false, message: 'Question not found' }, { status: 404 });
         }
@@ -52,8 +54,9 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser || authUser.role !== 'admin') {
@@ -61,7 +64,7 @@ export async function DELETE(
         }
 
         await connectDB();
-        const question = await Question.findByIdAndDelete(params.id);
+        const question = await Question.findByIdAndDelete(id);
 
         if (!question) {
             return NextResponse.json({ success: false, message: 'Question not found' }, { status: 404 });

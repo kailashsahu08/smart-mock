@@ -5,8 +5,9 @@ import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser) {
@@ -14,7 +15,7 @@ export async function GET(
         }
 
         await connectDB();
-        const exam = await Exam.findById(params.id)
+        const exam = await Exam.findById(id)
             .populate('questions')
             .populate('createdBy', 'name email');
 
@@ -37,8 +38,9 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser || authUser.role !== 'admin') {
@@ -48,7 +50,7 @@ export async function PUT(
         const body = await request.json();
         await connectDB();
 
-        const exam = await Exam.findByIdAndUpdate(params.id, body, { new: true });
+        const exam = await Exam.findByIdAndUpdate(id, body, { new: true });
         if (!exam) {
             return NextResponse.json({ success: false, message: 'Exam not found' }, { status: 404 });
         }
@@ -64,8 +66,9 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser || authUser.role !== 'admin') {
@@ -73,7 +76,7 @@ export async function DELETE(
         }
 
         await connectDB();
-        const exam = await Exam.findByIdAndDelete(params.id);
+        const exam = await Exam.findByIdAndDelete(id);
         if (!exam) {
             return NextResponse.json({ success: false, message: 'Exam not found' }, { status: 404 });
         }

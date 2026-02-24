@@ -5,11 +5,12 @@ import User from '@/models/User';
 // GET: Fetch single user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     await connectDB();
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
@@ -28,12 +29,13 @@ export async function GET(
 // PUT: Update user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     await connectDB();
     const body = await request.json();
-    const user = await User.findByIdAndUpdate(params.id, body, { new: true });
+    const user = await User.findByIdAndUpdate(id, body, { new: true });
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
@@ -52,11 +54,12 @@ export async function PUT(
 // DELETE: Delete user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     await connectDB();
-    const user = await User.findByIdAndDelete(params.id);
+    const user = await User.findByIdAndDelete(id);
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'User not found' },

@@ -6,8 +6,9 @@ import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser) {
@@ -15,7 +16,7 @@ export async function GET(
         }
 
         await connectDB();
-        const attempt = await TestAttempt.findById(params.id)
+        const attempt = await TestAttempt.findById(id)
             .populate('exam')
             .populate('user', 'name email');
 
@@ -38,8 +39,9 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser) {
@@ -51,7 +53,7 @@ export async function PUT(
 
         await connectDB();
 
-        const attempt = await TestAttempt.findById(params.id);
+        const attempt = await TestAttempt.findById(id);
         if (!attempt) {
             return NextResponse.json({ success: false, message: 'Attempt not found' }, { status: 404 });
         }
@@ -75,8 +77,9 @@ export async function PUT(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const authUser = await getAuthUser(request);
 
@@ -90,7 +93,7 @@ export async function POST(
 
         await connectDB();
 
-        const attempt = await TestAttempt.findById(params.id).populate('exam');
+        const attempt = await TestAttempt.findById(id).populate('exam');
         if (!attempt) {
             return NextResponse.json({ success: false, message: 'Attempt not found' }, { status: 404 });
         }

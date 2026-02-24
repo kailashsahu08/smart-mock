@@ -6,8 +6,9 @@ import { getAuthUser } from '@/lib/getAuthUser';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { attemptId: string } }
+    { params }: { params: Promise<{ attemptId: string }> }
 ) {
+    const { attemptId } = await params;
     try {
         const authUser = await getAuthUser(request);
         if (!authUser) {
@@ -16,7 +17,7 @@ export async function GET(
 
         await connectDB();
 
-        const attempt = await TestAttempt.findById(params.attemptId)
+        const attempt = await TestAttempt.findById(attemptId)
             .populate('exam')
             .populate('user', 'name email');
 
