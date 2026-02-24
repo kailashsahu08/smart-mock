@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot WebSocket Flow Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        .diagram-section {
+            margin: 40px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 5px solid #667eea;
+        }
+        .diagram-section h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .diagram-section h2::before {
+            content: '📊';
+            font-size: 1.2em;
+        }
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .legend {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .legend h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .legend-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .tab:hover {
+            background: #e0e0e0;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Spring Boot WebSocket Flow Diagrams</h1>
+        <p class="subtitle">Complete visualization of your chat application's WebSocket architecture</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview')">📋 Overview</button>
+            <button class="tab" onclick="showTab('connection')">🔌 Connection Flow</button>
+            <button class="tab" onclick="showTab('messaging')">💬 Message Flow</button>
+            <button class="tab" onclick="showTab('architecture')">🏗️ Architecture</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="diagram-section">
+                <h2>Complete System Flow</h2>
+                <div class="mermaid">
+graph TB
+    subgraph Client["👤 Client Browser"]
+        HTML[HTML Page<br/>index.html]
+        JS[JavaScript<br/>main.js]
+        SockJS[SockJS Client]
+        STOMP[STOMP Client]
+    end
+
+    subgraph Server["🖥️ Spring Boot Server"]
+        WS[WebSocket Endpoint<br/>/websocket]
+        Config[WebSocketConfig<br/>Configuration]
+        Broker[Message Broker<br/>/topic/public]
+        Controller[ChatController<br/>Message Handlers]
+        Listener[WebSocketEventListener<br/>Disconnect Handler]
+    end
+
+    subgraph Messages["📨 Message Types"]
+        JOIN[JOIN Message<br/>User enters chat]
+        CHAT[CHAT Message<br/>Normal messages]
+        LEAVE[LEAVE Message<br/>User exits]
+    end
+
+    HTML --> JS
+    JS --> SockJS
+    SockJS --> STOMP
+    STOMP -->|Connect| WS
+    WS --> Config
+    Config --> Broker
+    STOMP -->|Send /app/chat.register| Controller
+    STOMP -->|Send /app/chat.send| Controller
+    Controller -->|Broadcast| Broker
+    Broker -->|Subscribe /topic/public| STOMP
+    Listener -->|On Disconnect| Broker
+    
+    Controller --> JOIN
+    Controller --> CHAT
+    Listener --> LEAVE
+
+    style Client fill:#e3f2fd
+    style Server fill:#fff3e0
+    style Messages fill:#f1f8e9
+    style WS fill:#4CAF50,color:#fff
+    style Broker fill:#FF9800,color:#fff
+    style Controller fill:#2196F3,color:#fff
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Flow Tab -->
+        <div id="connection" class="tab-content">
+            <div class="diagram-section">
+                <h2>User Connection & Registration Flow</h2>
+                <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 User Browser
+    participant SockJS as SockJS Client
+    participant Server as 🖥️ Spring Server
+    participant Config as WebSocketConfig
+    participant Controller as ChatController
+    participant Broker as Message Broker
+    participant Others as 👥 Other Users
+
+    User->>User: Enter username & password
+    User->>User: Click "Enter" button
+    
+    rect rgb(220, 240, 255)
+        Note over User,Server: WebSocket Connection Phase
+        User->>SockJS: new SockJS("/websocket")
+        SockJS->>Server: HTTP Handshake Request
+        Server->>Config: registerStompEndpoints()
+        Config-->>Server: Endpoint configured
+        Server-->>SockJS: WebSocket Upgrade (101)
+        SockJS->>User: Connection established ✓
+    end
+
+    rect rgb(255, 240, 220)
+        Note over User,Others: Subscription & Registration Phase
+        User->>Server: SUBSCRIBE /topic/public
+        Server->>Broker: Register subscriber
+        Broker-->>User: Subscription confirmed
+        
+        User->>Server: SEND /app/chat.register<br/>{sender: "Alice", type: "JOIN"}
+        Server->>Controller: @MessageMapping("/chat.register")
+        Controller->>Controller: Store username in session
+        Controller->>Broker: @SendTo("/topic/public")<br/>Return JOIN message
+        Broker->>User: "Alice joined!"
+        Broker->>Others: "Alice joined!"
+    end
+
+    rect rgb(220, 255, 220)
+        Note over User,Others: Ready to Chat
+        User->>User: Show chat interface
+        Others->>Others: Display join notification
+    end
+                </div>
+            </div>
+
+            <div class="diagram-section">
+                <h2>User Disconnection Flow</h2>
+                <div class="mermaid">
+sequenceDiagram
+    participant User as 👤 Alice
+    participant Server as 🖥️ Spring Server
+    participant Listener as WebSocketEventListener
+    participant Broker as Message Broker
+    participant Others as 👥 Bob & Charlie
+
+    User->>User: Click "Logout" or Close browser
+    User->>Server: WebSocket DISCONNECT
+    
+    rect rgb(255, 220, 220)
+        Note over Server,Others: Disconnect Event Handling
+        Server->>Listener: SessionDisconnectEvent triggered
+        Listener->>Listener: Get username from session<br/>("Alice")
+        Listener->>Listener: Create LEAVE message<br/>{sender: "Alice", type: "LEAVE"}
+        Listener->>Broker: messagingTemplate.convertAndSend()<br/>Send to /topic/public
+        Broker->>Others: Broadcast "Alice left!"
+        Others->>Others: Display leave notification
+    end
+                </div>
+            </div>
+        </div>
+
+        <!-- Messaging Flow Tab -->
+        <div id="messaging" class="tab-content">
+            <div class="diagram-section">
+                <h2>Chat Message Flow (Detailed)</h2>
+                <div class="mermaid">
+sequenceDiagram
+    participant Alice as 👤 Alice Browser
+    participant AliceJS as Alice's JS
+    participant Server as 🖥️ Spring Server
+    participant Controller as ChatController
+    participant Broker as Message Broker
+    participant BobJS as Bob's JS
+    participant Bob as 👤 Bob Browser
+    participant CharlieJS as Charlie's JS
+    participant Charlie as 👤 Charlie Browser
+
+    Alice->>AliceJS: Types "Hello World"<br/>Clicks Send
+    
+    rect rgb(240, 248, 255)
+        Note over AliceJS,Server: Message Sending Phase
+        AliceJS->>AliceJS: Create ChatMessage object<br/>{sender:"Alice", content:"Hello World", type:"CHAT"}
+        AliceJS->>Server: stompClient.send("/app/chat.send", message)
+        Server->>Controller: @MessageMapping("/chat.send")<br/>Route to sendMessage()
+        Controller->>Controller: Receive @Payload ChatMessage
+        Controller->>Controller: Return ChatMessage
+    end
+
+    rect rgb(255, 248, 240)
+        Note over Controller,Charlie: Broadcasting Phase
+        Controller->>Broker: @SendTo("/topic/public")<br/>Broadcast message
+        
+        par Broadcast to all subscribers
+            Broker->>AliceJS: Send to /topic/public
+            Broker->>BobJS: Send to /topic/public
+            Broker->>CharlieJS: Send to /topic/public
+        end
+    end
+
+    rect rgb(240, 255, 240)
+        Note over AliceJS,Charlie: Display Phase
+        AliceJS->>AliceJS: onMessageReceived(payload)
+        AliceJS->>AliceJS: Check: message.sender === username<br/>Add "own-message" class
+        AliceJS->>Alice: Display on RIGHT side<br/>"Hello World"
+        
+        BobJS->>BobJS: onMessageReceived(payload)
+        BobJS->>BobJS: Different sender<br/>Show avatar + username
+        BobJS->>Bob: Display on LEFT side<br/>"Alice: Hello World"
+        
+        CharlieJS->>CharlieJS: onMessageReceived(payload)
+        CharlieJS->>CharlieJS: Different sender<br/>Show avatar + username
+        CharlieJS->>Charlie: Display on LEFT side<br/>"Alice: Hello World"
+    end
+                </div>
+            </div>
+
+            <div class="diagram-section">
+                <h2>Message Type Flow</h2>
+                <div class="mermaid">
+graph TD
+    Start([User Action]) --> Action{What Action?}
+    
+    Action -->|Enter Chat| Join[JOIN Message]
+    Action -->|Send Message| Chat[CHAT Message]
+    Action -->|Leave Chat| Leave[LEAVE Message]
+    
+    Join --> JoinData["{sender: username<br/>type: JOIN}"]
+    Chat --> ChatData["{sender: username<br/>content: message<br/>type: CHAT}"]
+    Leave --> LeaveData["{sender: username<br/>type: LEAVE}"]
+    
+    JoinData --> Route1["/app/chat.register"]
+    ChatData --> Route2["/app/chat.send"]
+    LeaveData --> Route3["Direct to Broker<br/>(from Listener)"]
+    
+    Route1 --> Controller1["ChatController<br/>register()"]
+    Route2 --> Controller2["ChatController<br/>sendMessage()"]
+    Route3 --> Broadcast
+    
+    Controller1 --> Broadcast["Broadcast to<br/>/topic/public"]
+    Controller2 --> Broadcast
+    
+    Broadcast --> Display{Display Type}
+    
+    Display -->|JOIN| ShowJoin["event-message<br/>'Alice joined!'"]
+    Display -->|CHAT| ShowChat["chat-message<br/>'Alice: Hello World'"]
+    Display -->|LEAVE| ShowLeave["event-message<br/>'Alice left!'"]
+    
+    ShowJoin --> End([All Users See It])
+    ShowChat --> End
+    ShowLeave --> End
+    
+    style Join fill:#4CAF50,color:#fff
+    style Chat fill:#2196F3,color:#fff
+    style Leave fill:#f44336,color:#fff
+    style Broadcast fill:#FF9800,color:#fff
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Tab -->
+        <div id="architecture" class="tab-content">
+            <div class="diagram-section">
+                <h2>Spring Boot WebSocket Architecture</h2>
+                <div class="mermaid">
+graph TB
+    subgraph Frontend["Frontend Layer (Browser)"]
+        UI[HTML/CSS UI<br/>index.html + main.css]
+        Script[JavaScript Logic<br/>main.js]
+        SockJSLib[SockJS Library<br/>Fallback Support]
+        StompLib[STOMP.js Library<br/>Messaging Protocol]
+    end
+
+    subgraph WebSocket["WebSocket Layer"]
+        WSEndpoint[WebSocket Endpoint<br/>/websocket<br/><i>Entry point</i>]
+        Protocol[STOMP Protocol<br/><i>Message structure</i>]
+    end
+
+    subgraph Spring["Spring Configuration Layer"]
+        ConfigClass[WebSocketConfig.java<br/>@Configuration]
+        EnableWS[@EnableWebSocketMessageBroker<br/><i>Activates WebSocket</i>]
+        StompReg[registerStompEndpoints()<br/><i>Defines /websocket</i>]
+        BrokerConfig[configureMessageBroker()<br/><i>Sets /app & /topic</i>]
+    end
+
+    subgraph Routing["Message Routing Layer"]
+        AppPrefix["/app/*"<br/>Client → Server<br/><i>Incoming messages</i>]
+        TopicPrefix["/topic/*"<br/>Server → Clients<br/><i>Outgoing broadcasts</i>]
+        SimpleBroker[Simple In-Memory Broker<br/><i>Message distribution</i>]
+    end
+
+    subgraph Business["Business Logic Layer"]
+        ChatCtrl[ChatController.java<br/>@Controller]
+        RegisterMethod[@MessageMapping<br/>"/chat.register"]
+        SendMethod[@MessageMapping<br/>"/chat.send"]
+        SendToAnno[@SendTo<br/>"/topic/public"]
+    end
+
+    subgraph Events["Event Handling Layer"]
+        EventList[WebSocketEventListener.java<br/>@Component]
+        DisconnectEvent[@EventListener<br/>SessionDisconnectEvent]
+        MsgTemplate[SimpMessageSendingOperations<br/><i>Manual message sending</i>]
+    end
+
+    subgraph Model["Data Model Layer"]
+        ChatMsg[ChatMessage.java<br/>@Data]
+        Fields[Fields:<br/>• sender<br/>• content<br/>• type]
+        Enum[MessageType enum:<br/>JOIN, CHAT, LEAVE]
+    end
+
+    UI --> Script
+    Script --> SockJSLib
+    SockJSLib --> StompLib
+    StompLib --> WSEndpoint
+    WSEndpoint --> Protocol
+    Protocol --> ConfigClass
+    
+    ConfigClass --> EnableWS
+    EnableWS --> StompReg
+    EnableWS --> BrokerConfig
+    StompReg --> WSEndpoint
+    BrokerConfig --> AppPrefix
+    BrokerConfig --> TopicPrefix
+    BrokerConfig --> SimpleBroker
+    
+    AppPrefix --> ChatCtrl
+    ChatCtrl --> RegisterMethod
+    ChatCtrl --> SendMethod
+    RegisterMethod --> SendToAnno
+    SendMethod --> SendToAnno
+    SendToAnno --> TopicPrefix
+    TopicPrefix --> SimpleBroker
+    SimpleBroker --> StompLib
+    
+    WSEndpoint -.Disconnect Event.-> EventList
+    EventList --> DisconnectEvent
+    DisconnectEvent --> MsgTemplate
+    MsgTemplate --> SimpleBroker
+    
+    ChatCtrl --> ChatMsg
+    ChatMsg --> Fields
+    ChatMsg --> Enum
+    
+    style Frontend fill:#e3f2fd
+    style WebSocket fill:#fff3e0
+    style Spring fill:#f3e5f5
+    style Routing fill:#e8f5e9
+    style Business fill:#fff9c4
+    style Events fill:#ffe0b2
+    style Model fill:#fce4ec
+                </div>
+            </div>
+
+            <div class="legend">
+                <h3>🔑 Key Components Explained</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4CAF50;"></div>
+                    <strong>/app/*</strong> - Client-to-Server messages (handled by @MessageMapping)
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FF9800;"></div>
+                    <strong>/topic/*</strong> - Server-to-Clients broadcasts (pub/sub model)
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2196F3;"></div>
+                    <strong>@MessageMapping</strong> - Routes incoming messages to controller methods
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9C27B0;"></div>
+                    <strong>@SendTo</strong> - Broadcasts return value to specified destination
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <strong>Simple Broker</strong> - In-memory message distributor (single server only)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35
+            }
+        });
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
