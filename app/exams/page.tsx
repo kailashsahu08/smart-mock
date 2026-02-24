@@ -30,8 +30,8 @@ export default function ExamsPage() {
     }
   };
 
-  const handleStartExam = (examId: string) => {
-    router.push(`/exams/${examId}/start`);
+  const handleAddQuestions = (examId: string) => {
+    router.push(`/exams/${examId}/questions`);
   };
 
   const filteredExams = exams.filter((exam) => {
@@ -177,9 +177,9 @@ export default function ExamsPage() {
                 <Button
                   variant="primary"
                   className="w-full py-2.5"
-                  onClick={() => handleStartExam(exam._id)}
+                  onClick={() => handleAddQuestions(exam._id)}
                 >
-                  Start Exam
+                  Add Questions
                 </Button>
               </Card>
             ))}
